@@ -12,6 +12,8 @@ Training is performed in `run_training.py`, this uses parameters from `args.yaml
 
 Predictions are generated in `gen_predictions.ipynb` and test metrics generated. The results are:
 
+| Metric    | Score |
+|-----------|-------|
 | Recall    | 0.678 |
 | Precision | 0.750 |
 | F1        | 0.712 |
@@ -20,8 +22,8 @@ I anticipate a higher performance if the targets and predications are mapped to 
 
 ## Dependencies
 
- *pytorch-lightning==0.7.5
- *transformers==2.6.0
- *torch==1.4.0
+ * `pytorch-lightning==0.7.5`
+ * `transformers==2.6.0`
+ * `torch==1.4.0`
 
 Other dependecies are listed in `requirements.txt`.
