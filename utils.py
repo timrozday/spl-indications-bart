@@ -50,25 +50,6 @@ class SummarizationDataset(Dataset):
                     continue
                 if sum([len(t) for t in targets_t]) + len(targets_t) + 1 > self.answer_size:
                     continue
-                    
-#                 targets_str = ' [SEP] '.join(targets)
-#                 targets_t = self.tokenizer.tokenize(targets_str, max_length=self.answer_size, pad_to_max_length=True).squeeze()
-
-#                 targets_index = torch.zeros([targets_lim,2], dtype=torch.int64)
-#                 i = 0
-#                 for j in range(targets_t.shape[0]):
-#                     if targets_t[j] == 0: continue
-#                     if targets_t[j] == 2:
-#                         targets_index[i][1] = j-1
-#                         break
-#                     if targets_t[j] == 50118:
-#                         targets_index[i][1] = j-1
-#                         i += 1
-#                         continue
-#                     if targets_index[i][0] == 0:
-#                         targets_index[i][0] = j
-#                     if targets_t[j] == 1:
-#                         raise Exception("Undefined token (1) reached before end-tokens (2)")
                 
                 source_t = self.tokenizer.encode_plus(source, max_length=self.doc_size, pad_to_max_length=True, return_tensors='pt', return_attention_mask=True, add_prefix_space=True)
             
@@ -195,21 +176,6 @@ class BartSystem(pl.LightningModule):
             lm_labels=lm_labels,
         )
 
-#     def join_target_tokens(self, targets_t, length=128, end=False):
-#         device = targets_t[0].device
-#         result = torch.zeros([1,length], dtype=torch.int64).to(device)
-#         pos = 1
-#         for t in targets_t:
-#             result[0,pos:pos+len(t[0][1:-1])] = t[0][1:-1]
-#             pos += len(t[0][1:])
-#             result[0,pos-1] = 50118.0
-#         if end:
-#             result[0,pos-1] = 2.0
-#         else:
-#             result[0,pos-1] = 0.0
-
-#         return result
-
     def _step(self, batch):  # delim_token=50118, start_token=0, end_token=2, undefined_token=1
         input_ids = batch["source_ids"].clone()
         
@@ -231,137 +197,6 @@ class BartSystem(pl.LightningModule):
         )
         
         return output[0]
-    
-#         device = batch['target_ids'].device
-        
-#         n_targets = batch['targets_index'].shape[1]  # number of targets
-#         len_targets = batch['target_ids'].shape  # length of targets tensore
-
-#         target_index = batch['targets_index'][0]
-
-#         y = torch.ones(len_targets, dtype=torch.int64, device=device)*undefined_token  # the final output targets tensor
-#         target_order = torch.ones(n_targets, dtype=torch.int64, device=device)*-1  # used to prevent target being added to the order more than once
-#         losses = torch.zeros(n_targets, device=device)  # used to store losses so that the smallest can be picked
-
-#         y[0][0] = start_token  # set first token
-#         pos = 0  # pos holds the posision to write to in y
-
-#         for i in range(n_targets):  # in each iteration, add a target to y
-
-#             # get loss of each of the potential new targets
-#             for j in range(n_targets):
-
-#                 # check if there is a target by checking the target_index
-#                 if target_index[j][1] <= 0:
-#                     losses[j] = -1
-#                     continue
-
-#                 # check that target is not already in target order
-#                 same = False
-#                 for k in range(n_targets):
-#                     if j == target_order[k]:
-#                         same = True
-#                         break
-#                 if same:
-#                     losses[j] = -1
-#                     continue
-
-#                 # add this target to ordered_targets_map
-#                 temp_y = y.clone()
-#                 temp_pos = pos
-#                 temp_y[0][temp_pos] = delim_token
-#                 temp_pos += 1
-#                 for k in range(target_index[j][0], target_index[j][1]+1):
-#                     temp_y[0][temp_pos] = batch['target_ids'][0][k]
-#                     temp_pos += 1
-#                 temp_y[0][temp_pos] = end_token  # don't update pos, this is so that the end token gets overwritten when a new target is added
-#                 temp_y[0][0] = start_token
-
-#                 # get the loss
-#                 y_ids = temp_y[:,:-1].contiguous()
-#                 lm_labels = temp_y[:,1:].clone()
-#                 lm_labels[lm_labels == self.tokenizer.pad_token_id] = -100
-
-#                 output = self.model.forward(
-#                     input_ids=batch["source_ids"],
-#                     attention_mask=batch["source_mask"],
-#                     decoder_input_ids=y_ids,
-#                     lm_labels=lm_labels,
-#                 )
-
-#                 losses[j] = output[0].item()
-
-#                 change = True
-
-#             # find the target with the lowest loss
-#             min_loss_i = -1
-#             for j in range(n_targets):
-#                 if losses[j] >= 0:
-#                     if min_loss_i < 0:
-#                         min_loss_i = j
-#                     elif losses[j] < losses[min_loss_i]:
-#                         min_loss_i = j
-
-#             if min_loss_i >= 0:  # check if there is a target to process
-#                 # add to y and target_order
-#                 target_order[i] = min_loss_i
-#                 y[0][pos] = delim_token
-#                 pos += 1
-#                 for k in range(target_index[min_loss_i][0], target_index[min_loss_i][1]+1):
-#                     y[0][pos] = batch['target_ids'][0][k]
-#                     pos += 1
-#                 y[0][pos] = end_token  # don't update pos, this is so that the end token gets overwritten when a new target is added
-#                 y[0][0] = start_token
-#             else:
-#                 break  # if there are no more targets to process, just exit the loop
-# 
-#         return output[0]  # i.e. loss of final y, which is the optimal combination of targets 
-                    
-        
-#         n = len(batch['target_ids'])
-#         ordered_targets = []
-#         losses = {}
-#         while len(ordered_targets)<n:
-#             for target_i in set(range(n))-set(ordered_targets):
-#                 y = self.join_target_tokens(
-#                     [batch['target_ids'][i] for i in ordered_targets+[target_i]], 
-#                     length=self.hparams.answer_max_seq_length, 
-#                     end=(len(ordered_targets)==n)
-#                 )
-#                 y_ids = y[:,:-1].contiguous()
-#                 lm_labels = y[:,1:].clone()
-#                 lm_labels[y[:,1:] == self.tokenizer.pad_token_id] = -100
-
-#                 input_ids = batch["source_ids"]
-#                 attention_mask = batch["source_mask"]
-                
-#                 output = self.model.forward(
-#                     input_ids=input_ids,
-#                     attention_mask=attention_mask,
-#                     decoder_input_ids=y_ids,
-#                     lm_labels=lm_labels,
-#                 )
-                
-#                 loss = output[0].clone()
-#                 losses[loss.item()] = target_i
-                
-#             min_loss_i = losses[min(losses.keys())]
-#             ordered_targets.append(min_loss_i)
-        
-#         y = batch["target_ids"]
-#         y_ids = y[:, :-1].contiguous()
-#         lm_labels = y[:, 1:].clone()
-#         lm_labels[y[:, 1:] == self.tokenizer.pad_token_id] = -100
-#         outputs = self(
-#             input_ids=batch["source_ids"],
-#             attention_mask=batch["source_mask"],
-#             decoder_input_ids=y_ids,
-#             lm_labels=lm_labels,
-#         )
-        
-#         loss = outputs[0]
-        
-#         return loss
 
     def training_step(self, batch, batch_idx):
 #         targets = self.train_dataset[batch_idx]['targets']
