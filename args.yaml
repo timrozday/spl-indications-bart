@@ -1,0 +1,51 @@
+model_type: "bart"
+model_name_or_path: "bart-large"
+config_name: ""
+tokenizer_name: './data/BartTokenizer'
+
+do_train: True
+do_test: False
+do_lower_case: False
+profile_gpu_memory: False
+
+learning_rate: 5.0e-5
+lr_decay: 0.95
+schedule_every_n_steps: 200
+weight_decay: 0.0
+adam_epsilon: 1.0e-8  # 1.0e-3
+warmup_steps: 0
+gradient_accumulation_steps: 25
+max_grad_norm: 1.0
+num_train_epochs: 20
+hist_log_freq: 500
+
+train_percent_check: 1.0
+val_percent_check: 1.0
+test_percent_check: 1.0
+shuffle_training_data: True
+
+train_batch_size: 2
+eval_batch_size: 2
+test_batch_size: 2
+
+# checkpoint_every_n_steps: 500
+val_check_interval: 150
+test_check_interval: 150
+
+doc_max_seq_length: 512
+answer_max_seq_length: 64
+data_dir: "./data"
+train_data_path: "./data/train-ner.json"
+val_data_path: "./data/dev-ner.json"
+test_data_path: "./data/dev-ner.json"
+output_dir: "./output"
+cache_dir: "./cache"
+log_dir: "./lightning_logs"
+
+fp_16: False
+fp16: False
+fp16_opt_level: "01"
+n_gpu: 1  # 0
+n_tpu_cores: 0
+
+seed: 42
